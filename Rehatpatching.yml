@@ -1,0 +1,28 @@
+---
+- hosts:  all
+  become: yes
+  tasks:
+    - name: Patching In Progress
+      yum:
+        name:  "*"
+        state: latest
+      register: upgraded
+
+    - name: reboot
+      shell: shutdown -r now
+      when: upgraded.changed
+      register: reboot
+
+    - name:  pause for 180 secs
+      pause:
+        minutes: 3
+
+    - name:  check if all the systems responding to ssh
+      local_action:
+        module: wait_for
+          host={{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}
+          port=22
+          search_regex=OpenSSH
+          delay=15
+          timeout=300
+          state=started
